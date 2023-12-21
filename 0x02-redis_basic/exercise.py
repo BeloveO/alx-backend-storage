@@ -35,3 +35,15 @@ class Cache:
         if data is not None and fn is not None and callable(fn):
             return fn(data)
         return data
+    def get_str(self, key: str) -> str:
+        """
+        Parametrize cache.get
+        """
+        data = self.get(key, lambda x: x.decode('utf-8'))
+        return data
+
+    def get_int(self, key: str) -> int:
+        """
+        Parametrize cache.get
+        """
+        data = self
