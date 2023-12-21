@@ -7,6 +7,7 @@ import uuid
 from typing import Union, Callable, Optional
 from functools import wraps
 
+
 def count_calls(method: Callable) -> Callable:
     """
     Count number of times cache class is called
@@ -21,9 +22,30 @@ def count_calls(method: Callable) -> Callable:
         return method(self, *args, **kwargs)
     return wrapper
 
+
+def call_history(method: Callable) -> Callable:
+    """
+    Store history of inputs and outputs of a function
+    """
+    key = method.__qualname__
+    inputs = key + ":inputs"
+    outputs = key + ":outputs"
+
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        """
+        Wrapper function
+        """
+        self._redis.rpush(inputs, str(args))
+        data = method(self, *args, **kwargs)
+        self._redis.rpush(outputs, str(data))
+        return data
+    return wrapper
+
+
 class Cache:
     """
-    Methods to handle redid cache
+    Methods to handle redis cache
     """
     def __init__(self) -> None:
         """
@@ -32,6 +54,7 @@ class Cache:
         self._redis = redis.Redis()
         self._redis.flushdb()
 
+    @call_history
     @count_calls
     def store(self, data: Union[str, bytes, int, float]) -> str:
         """
@@ -50,6 +73,7 @@ class Cache:
         if data is not None and fn is not None and callable(fn):
             return fn(data)
         return data
+
     def get_str(self, key: str) -> str:
         """
         Parametrize cache.get
